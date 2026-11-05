@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teste de DNA: Ele é o pai?</title>
+<style>
+:root{
+  color-scheme: dark;
+  --palco:#1c0b3d; --palco2:#2c1260; --amarelo:#ffd21f; --vermelho:#e3262e; --ciano:#33c8ff;
+  --rosa:#ff5fae; --verde:#28d07b; --papel:#fbf8ff; --tinta:#1b1430;
+  --gel:#061419; --gel2:#0b2229; --banda:#ffc6ea;
+  --mat:#ff6fb5; --pat:#4aa8ff; --amb:#b58cff; --ouro:#ffd21f;
+  --texto:#f3eefe; --texto2:#c6b9e6;
+  --show: Impact, Haettenschweiler, "Arial Narrow Bold", "Franklin Gothic Bold", "Arial Black", sans-serif;
+  --corpo: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--corpo);background:var(--palco);color:var(--texto);min-height:100vh;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  background-image:radial-gradient(ellipse at 50% -10%, #4a1f96 0%, transparent 60%), radial-gradient(ellipse at 100% 100%, #3b0f4f 0%, transparent 50%);}
+button{font:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--ciano);outline-offset:3px}
+.wrap{max-width:1320px;margin:0 auto;padding:12px 16px 40px}
+
+/* topo */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 0 14px}
+.logo{font-family:var(--show);font-size:clamp(26px,4.2vw,44px);line-height:.95;letter-spacing:.5px;color:var(--amarelo);
+  text-shadow:0 3px 0 #b3161d,0 6px 0 #5c0b10,0 0 24px rgba(255,210,31,.35);margin:0}
+.logo small{display:block;font-size:.42em;color:#fff;text-shadow:0 2px 0 #b3161d;letter-spacing:1px}
+.hud{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto;align-items:center}
+.chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.chip b{color:var(--amarelo);font-variant-numeric:tabular-nums}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;background:var(--amarelo);color:#2a1400;box-shadow:0 4px 0 #a37f00}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #a37f00}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.sec{background:rgba(255,255,255,.12);color:var(--texto);box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.btn.red{background:var(--vermelho);color:#fff;box-shadow:0 4px 0 #7d0f13}
+.btn.small{padding:7px 12px;font-size:14px}
+
+/* palco */
+.stage{position:relative;border-radius:22px;overflow:hidden;padding:18px;display:grid;grid-template-columns:1fr minmax(220px,280px);gap:18px;
+  background:linear-gradient(180deg,#3a1585 0%,#25105a 62%,#160838 62%,#1f0b4a 100%);border:3px solid #5d2fc0;transition:box-shadow .4s}
+.stage::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 12% 0%,rgba(51,200,255,.28),transparent 35%),radial-gradient(circle at 88% 0%,rgba(255,95,174,.28),transparent 35%);}
+.stage.lit{box-shadow:0 0 0 4px var(--amarelo),0 0 60px rgba(255,210,31,.6)}
+.stage.lit::before{background:radial-gradient(circle at 50% 0%,rgba(255,226,120,.55),transparent 60%),radial-gradient(circle at 12% 0%,rgba(51,200,255,.35),transparent 35%),radial-gradient(circle at 88% 0%,rgba(255,95,174,.35),transparent 35%)}
+.room{position:relative;background:rgba(0,0,0,.22);border:2px dashed rgba(255,255,255,.22);border-radius:16px;padding:10px 10px 6px}
+.room h2{font-family:var(--show);font-weight:400;font-size:20px;letter-spacing:.6px;margin:0 0 6px;color:#fff}
+.room p.case{margin:0 0 8px;color:var(--texto2);font-size:14px;max-width:62ch}
+.bench{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:end;
+  background:linear-gradient(transparent 78%,#6b3d1f 78%,#6b3d1f 86%,#3d2010 86%);border-radius:10px}
+.suspect{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;text-align:center;border-radius:14px;padding:4px 2px 6px;cursor:grab;transition:transform .25s, filter .3s, opacity .3s;outline:none}
+.suspect svg{width:100%;max-width:130px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
+.suspect .tag{display:inline-block;margin-top:2px;font-family:var(--show);font-size:16px;letter-spacing:.5px;background:#fff;color:var(--tinta);padding:2px 10px;border-radius:6px;transform:rotate(-2deg)}
+.suspect:hover{transform:translateY(-4px)}
+.suspect.sel{transform:translateY(-6px)}
+.suspect.sel .tag{background:var(--amarelo)}
+.suspect.sel::after{content:"";position:absolute;inset:-2px;border:3px solid var(--amarelo);border-radius:16px;pointer-events:none}
+.suspect.away{opacity:.15;pointer-events:none}
+.suspect.bounce{animation:bounce .6s}
+.locked .suspect{filter:grayscale(1) brightness(.6);cursor:not-allowed}
+.lockbadge{display:none;position:absolute;inset:0;align-items:center;justify-content:center;pointer-events:none}
+.locked .lockbadge{display:flex}
+.lockbadge span{background:rgba(0,0,0,.75);border:2px solid var(--vermelho);color:#fff;padding:8px 14px;border-radius:12px;font-weight:700}
+.ghost{position:fixed;z-index:60;pointer-events:none;width:110px;transform:translate(-50%,-60%) rotate(-6deg);filter:drop-shadow(0 14px 14px rgba(0,0,0,.5))}
+
+.booth-col{min-width:0;display:flex;flex-direction:column;gap:10px}
+.booth{position:relative;flex:1;min-height:250px;border-radius:16px 16px 6px 6px;background:#2a0a14;border:4px solid #8b1a22;display:flex;flex-direction:column;overflow:hidden;transition:transform .2s}
+.marquee{position:relative;margin:8px;padding:12px 8px;border-radius:10px;background:var(--vermelho);text-align:center;
+  font-family:var(--show);font-size:clamp(26px,3vw,34px);color:#fff;line-height:1;letter-spacing:.5px;text-shadow:0 3px 0 #6d0c11}
+.marquee::before{content:"";position:absolute;inset:3px;border-radius:8px;pointer-events:none;
+  background:radial-gradient(circle,#fff6b0 0 2.6px,transparent 3px) 0 0/14px 14px;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:5px;animation:bulbs 1s steps(2) infinite}
+@keyframes bulbs{50%{opacity:.35}}
+.curtain{position:relative;flex:1;margin:0 8px 8px;border-radius:6px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,#9e1622 0 14px,#7a0f19 14px 26px);display:flex;align-items:flex-end;justify-content:center}
+.curtain .slot{width:70%;max-width:150px;min-height:120px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.curtain .slot svg{width:100%;height:auto;animation:enter .7s ease-out}
+.drop-hint{position:absolute;inset:auto 0 10px;text-align:center;font-size:13px;color:#ffe9ea;opacity:.85;pointer-events:none}
+.booth.over{transform:scale(1.03);border-color:var(--amarelo)}
+.booth.over .curtain{filter:brightness(1.3)}
+.booth.wrong{animation:shake .5s}
+.booth.wrong .curtain{background:repeating-linear-gradient(90deg,#3a0a0e 0 14px,#2a070a 14px 26px)}
+.booth.right{border-color:var(--amarelo);box-shadow:0 0 30px rgba(255,210,31,.7)}
+.verdict{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%) rotate(-6deg) scale(.3);opacity:0;pointer-events:none;
+  font-family:var(--show);font-size:clamp(24px,2.6vw,34px);white-space:nowrap;padding:8px 16px;border-radius:10px;border:4px solid #fff;transition:transform .35s cubic-bezier(.2,1.6,.4,1),opacity .2s;z-index:3}
+.verdict.show{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1)}
+.verdict.no{background:var(--vermelho);color:#fff}
+.verdict.yes{background:var(--amarelo);color:#5c0b10}
+.sendbtn{width:100%}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes bounce{30%{transform:translateY(-18px)}60%{transform:translateY(0)}80%{transform:translateY(-6px)}}
+@keyframes enter{from{transform:translateY(40px);opacity:0}}
+
+/* dica */
+.hint{display:none;margin-top:14px;border-radius:16px;background:var(--papel);color:var(--tinta);padding:14px 16px;border-left:10px solid var(--vermelho);
+  grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.hint.show{display:grid}
+.ring{--p:0;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;
+  background:conic-gradient(var(--vermelho) calc(var(--p)*1%),#e8e1f5 0)}
+.ring span{width:50px;height:50px;border-radius:50%;background:var(--papel);display:grid;place-items:center}
+.hint h3{margin:0 0 4px;font-size:17px}
+.hint p{margin:0 0 10px;line-height:1.45;max-width:75ch}
+.hint .row{display:flex;flex-wrap:wrap;gap:8px}
+.hint .btn.sec{background:#ece6f7;color:var(--tinta);box-shadow:0 4px 0 #c9bfe0}
+
+/* laboratório */
+.lab{margin-top:18px;display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.panel{background:#120a26;border:1px solid #33255a;border-radius:16px;padding:14px}
+.labhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.labhead h2{font-size:18px;margin:0 8px 0 0}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{position:relative;border:1px solid #4a3a7a;background:#1d1240;color:var(--texto);border-radius:9px;padding:7px 12px;font-weight:600;font-size:14px}
+.tab[aria-selected=true]{background:var(--ciano);color:#03202b;border-color:var(--ciano)}
+.tab.flag::after{content:"";position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--vermelho);box-shadow:0 0 0 2px #120a26;animation:bulbs .8s steps(2) infinite}
+.toggle{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--texto2);margin-left:auto}
+.toggle input{width:18px;height:18px;accent-color:var(--ciano)}
+.gels{display:grid;gap:14px}
+.gels.all{grid-template-columns:repeat(2,minmax(0,1fr))}
+.gelbox{background:var(--gel);border-radius:12px;padding:8px;border:1px solid #17363f;overflow-x:auto}
+.gelbox h3{margin:2px 6px 6px;font-size:15px;color:#bfe9f5;font-weight:600}
+.gelbox svg{display:block;width:100%;min-width:420px;height:auto;margin:0 auto}
+.gels:not(.all) .gelbox svg{max-width:640px}
+.gelbox svg [data-a]{cursor:pointer}
+.labnote{font-size:13px;color:var(--texto2);margin:10px 2px 0;line-height:1.45}
+.notebook h2{font-size:17px;margin:0 0 4px}
+.notebook p{font-size:13px;color:var(--texto2);margin:0 0 10px;line-height:1.4}
+.nb{width:100%;border-collapse:separate;border-spacing:4px}
+.nb th{font-size:12px;color:var(--texto2);font-weight:600}
+.nb td:first-child{font-size:13px;font-weight:700;white-space:nowrap}
+.nbc{width:100%;height:36px;border-radius:8px;border:1px solid #4a3a7a;background:#1d1240;color:var(--texto2);font-size:18px;font-weight:800}
+.nbc.ok{background:#0f3d2a;border-color:var(--verde);color:var(--verde)}
+.nbc.x{background:#4a1016;border-color:var(--vermelho);color:#ff8b90}
+.legend{display:grid;gap:6px;margin-top:12px;font-size:13px;color:var(--texto2)}
+.legend i{display:inline-block;width:22px;height:7px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,3,25,.82);display:none;align-items:flex-start;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 12px 16px;overflow-y:auto}
+.modal.show{display:flex}
+.card{background:var(--papel);color:var(--tinta);border-radius:20px;max-width:980px;width:100%;padding:22px clamp(16px,3vw,32px);margin:auto 0;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.card.narrow{max-width:620px}
+.card h2.show{font-family:var(--show);font-weight:400;font-size:clamp(32px,5vw,52px);line-height:1;margin:0 0 12px;color:var(--vermelho);text-shadow:0 3px 0 #ffd21f}
+.card h3{margin:18px 0 8px}
+.card p{line-height:1.55;max-width:72ch}
+.card .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.card .btn.sec{background:#ece6f7;color:var(--tinta);box-shadow:0 4px 0 #c9bfe0}
+.steps{padding-left:20px;line-height:1.55}
+.steps li{margin-bottom:6px}
+.levelpick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.levelpick div{background:#efe8fb;border-radius:12px;padding:10px 12px;font-size:14px}
+.levelpick b{display:block;font-size:15px}
+.tblwrap{overflow-x:auto;border-radius:12px;border:1px solid #ddd2f0}
+table.res{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
+table.res th,table.res td{padding:6px 8px;border-bottom:1px solid #e6def3;text-align:center;vertical-align:middle}
+table.res th{background:#2a1a55;color:#fff;font-weight:600;position:sticky;top:0}
+table.res td.loc{text-align:left;font-weight:700;white-space:nowrap}
+table.res td.why{text-align:left;font-size:13px;color:#4b3e68;min-width:220px}
+table.res tr.gelrow td{background:#efe8fb;font-weight:700;text-align:left;color:#3a2a6b}
+table.res td.father{background:#fff6cc}
+.al{display:inline-block;min-width:24px;padding:1px 5px;border-radius:5px;margin:1px;font-weight:700;font-variant-numeric:tabular-nums}
+.al.m{background:#ffd3ea;color:#8a1050}
+.al.p{background:#d3e8ff;color:#0b4a8a}
+.al.a{background:#e6dbff;color:#4a2a99}
+.al.hit{outline:2px solid #e0a800;background:#fff0a8}
+.al.none{color:#7a6c94}
+td.ex{background:#ffe1e3;color:#a3121a}
+td.ex::after{content:" ✗";font-weight:800}
+.sumgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sumgrid div{border-radius:12px;padding:10px 12px;background:#efe8fb;font-size:14px;line-height:1.4}
+.sumgrid div.win{background:#fff3b8;border:2px solid #e0a800}
+.sumgrid div.lose{background:#ffe7e9}
+.sumgrid b{font-size:16px}
+.teach{background:#f1ecfb;border-radius:12px;padding:12px 16px;margin-top:12px}
+.teach li{margin-bottom:6px;line-height:1.5}
+.big{margin:8px 0;font-family:var(--show);font-size:64px;color:var(--vermelho);line-height:1}
+.perf{border-collapse:collapse;width:100%;font-size:15px}
+.perf td,.perf th{padding:8px;border-bottom:1px solid #e3d9f2;text-align:left}
+
+.confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:70;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+@media (max-width:980px){.lab{grid-template-columns:minmax(0,1fr)}.gels.all{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:700px){
+  .stage{grid-template-columns:minmax(0,1fr);padding:12px}
+  .suspect .tag{font-size:13px;padding:2px 6px;white-space:nowrap}
+  .gelbox svg{min-width:360px}
+  .booth{min-height:210px}
+  .sumgrid,.levelpick{grid-template-columns:1fr}
+  .hint{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="logo">TESTE DE DNA: ELE É O PAI?<small>Laboratório de Biologia Molecular</small></h1>
+    <div class="hud">
+      <span class="chip">Nível <b id="hudLevel">1</b>/3</span>
+      <span class="chip">Pontos <b id="hudScore">0</b></span>
+      <span class="chip">Tentativas <b id="hudAtt">0</b></span>
+      <span class="chip">Tempo <b id="hudTime">00:00</b></span>
+      <button class="btn sec small" id="btnPerf">Desempenho</button>
+      <button class="btn sec small" id="btnRestart">Reiniciar</button>
+    </div>
+  </header>
+
+  <section class="stage" id="stage" aria-label="Palco">
+    <div class="room" id="room">
+      <h2>SALA DE ESPERA DOS SUSPEITOS</h2>
+      <p class="case" id="caseText"></p>
+      <div class="bench" id="bench"></div>
+      <div class="lockbadge"><span id="lockText">Revise os géis antes de escolher de novo</span></div>
+    </div>
+    <div class="booth-col">
+      <div class="booth" id="booth" tabindex="0" role="button" aria-label="Cabine: Ele é o pai! Solte aqui o suspeito escolhido">
+        <div class="marquee">ELE É O PAI!</div>
+        <div class="curtain"><div class="slot" id="slot"></div></div>
+        <div class="drop-hint" id="dropHint">Arraste um suspeito até aqui</div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <button class="btn sendbtn" id="btnSend" disabled>Escolha um suspeito</button>
+    </div>
+  </section>
+
+  <aside class="hint" id="hint" aria-live="polite">
+    <div class="ring" id="ring"><span id="ringNum">0</span></div>
+    <div>
+      <h3 id="hintTitle">Dica</h3>
+      <p id="hintText"></p>
+      <div class="row">
+        <button class="btn sec small" id="btnGoGel" hidden>Abrir o gel indicado</button>
+        <button class="btn small" id="btnUnlock" disabled>Revisei os géis: liberar nova tentativa</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="lab">
+    <div class="panel">
+      <div class="labhead">
+        <h2>Bancada de eletroforese</h2>
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <label class="toggle"><input type="checkbox" id="chkLabels"> Mostrar número dos alelos</label>
+      </div>
+      <div class="gels" id="gels"></div>
+      <p class="labnote">Toque em uma banda para traçar uma linha de comparação naquele locus. Cada locus aparece em sua própria faixa de tamanho, como em um painel multiplex; fragmentos maiores ficam mais perto do poço.</p>
+    </div>
+    <div class="panel notebook">
+      <h2>Caderno de análise</h2>
+      <p>Anote sua conclusão para cada suspeito em cada gel. Toque para alternar entre não analisado, compatível e incompatível.</p>
+      <table class="nb" id="nb"></table>
+      <div class="legend" id="legend"></div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="card" id="modalCard"></div></div>
+
+<script>
+"use strict";
+const GENO = {"1": {"gels": [[{"name": "D8S1179", "unit": 4, "base": 91, "M": [13, 15], "C": [13, 13], "S": [[10, 14], [13, 14], [11, 13]]}, {"name": "D6S1043", "unit": 4, "base": 240, "M": [15, 18], "C": [16, 18], "S": [[12, 16], [15, 16], [15, 16]]}, {"name": "D12S391", "unit": 4, "base": 145, "M": [19, 20], "C": [19, 21], "S": [[20, 21], [20, 21], [20, 23]]}, {"name": "D2S441", "unit": 4, "base": 46, "M": [11, 15], "C": [14, 15], "S": [[13, 14], [11, 14], [11, 14]]}], [{"name": "D1S1677", "unit": 4, "base": 50, "M": [13, 13], "C": [10, 13], "S": [[10, 14], [10, 11], [10, 11]]}, {"name": "D1S1656", "unit": 4, "base": 130, "M": [14, 17], "C": [12, 14], "S": [[12, 14], [12, 15], [12, 16]]}, {"name": "TH01", "unit": 4, "base": 145, "M": [7, 10], "C": [4, 7], "S": [[5, 10], [4, 9], [4, 6]]}, {"name": "D11S4463", "unit": 4, "base": 70, "M": [12, 14], "C": [14, 16], "S": [[12, 16], [14, 16], [14, 16]]}, {"name": "D5S818", "unit": 4, "base": 106, "M": [11, 11], "C": [11, 12], "S": [[12, 13], [10, 12], [10, 15]]}], [{"name": "D4S2408", "unit": 4, "base": 60, "M": [9, 10], "C": [10, 11], "S": [[9, 10], [9, 11], [11, 11]]}, {"name": "Penta D", "unit": 5, "base": 370, "M": [8, 10], "C": [8, 9], "S": [[5, 9], [9, 9], [7, 16]]}, {"name": "CSF1PO", "unit": 4, "base": 277, "M": [11, 12], "C": [12, 12], "S": [[8, 12], [12, 12], [12, 12]]}, {"name": "D19S433", "unit": 4, "base": 69, "M": [11, 13], "C": [11, 15], "S": [[15, 15], [15, 15], [12, 15]]}], [{"name": "D9S1122", "unit": 4, "base": 80, "M": [11, 14], "C": [13, 14], "S": [[12, 12], [13, 14], [11, 13]]}, {"name": "D2S1338", "unit": 4, "base": 255, "M": [25, 25], "C": [22, 25], "S": [[19, 22], [21, 22], [23, 23]]}, {"name": "D10S1248", "unit": 4, "base": 50, "M": [10, 10], "C": [10, 14], "S": [[14, 16], [13, 14], [10, 14]]}, {"name": "D7S820", "unit": 4, "base": 231, "M": [8, 9], "C": [9, 10], "S": [[10, 12], [8, 10], [10, 10]]}, {"name": "D6S474", "unit": 4, "base": 100, "M": [17, 17], "C": [17, 18], "S": [[15, 18], [16, 18], [17, 18]]}]], "father": 1, "excl": {"(0, 0)": [0], "(1, 2)": [0], "(2, 0)": [0], "(3, 0)": [0], "(0, 2)": [2], "(1, 4)": [2], "(2, 1)": [2], "(3, 1)": [2]}}, "2": {"gels": [[{"name": "TH01", "unit": 4, "base": 145, "M": [6, 8], "C": [8, 9], "S": [[8, 10], [8, 9], [8, 9]]}, {"name": "D14S1434", "unit": 4, "base": 50, "M": [14, 14], "C": [13, 14], "S": [[12, 13], [12, 13], [13, 13]]}, {"name": "D10S1248", "unit": 4, "base": 50, "M": [12, 13], "C": [13, 15], "S": [[15, 16], [13, 15], [12, 15]]}, {"name": "D11S4463", "unit": 4, "base": 70, "M": [12, 13], "C": [13, 15], "S": [[14, 15], [15, 16], [15, 15]]}, {"name": "CSF1PO", "unit": 4, "base": 277, "M": [9, 14], "C": [8, 9], "S": [[8, 12], [8, 13], [8, 11]]}], [{"name": "D8S1179", "unit": 4, "base": 91, "M": [14, 17], "C": [15, 17], "S": [[13, 15], [10, 15], [15, 18]]}, {"name": "D2S1338", "unit": 4, "base": 255, "M": [19, 21], "C": [19, 26], "S": [[22, 26], [23, 26], [26, 26]]}, {"name": "D6S1043", "unit": 4, "base": 240, "M": [13, 15], "C": [12, 13], "S": [[12, 16], [12, 17], [12, 12]]}, {"name": "D12S391", "unit": 4, "base": 145, "M": [22, 23], "C": [22, 22], "S": [[20, 22], [22, 23], [20, 22]]}, {"name": "D1S1677", "unit": 4, "base": 50, "M": [11, 14], "C": [12, 14], "S": [[12, 16], [12, 12], [12, 13]]}, {"name": "Penta D", "unit": 5, "base": 370, "M": [6, 11], "C": [11, 15], "S": [[8, 15], [7, 16], [13, 15]]}], [{"name": "vWA", "unit": 4, "base": 108, "M": [14, 17], "C": [14, 16], "S": [[16, 16], [16, 16], [16, 16]]}, {"name": "Penta E", "unit": 5, "base": 355, "M": [12, 20], "C": [19, 20], "S": [[16, 19], [20, 21], [9, 19]]}, {"name": "D7S820", "unit": 4, "base": 231, "M": [10, 12], "C": [10, 13], "S": [[10, 13], [11, 13], [9, 13]]}, {"name": "D4S2408", "unit": 4, "base": 60, "M": [10, 11], "C": [9, 11], "S": [[8, 9], [9, 12], [9, 10]]}, {"name": "D18S51", "unit": 4, "base": 226, "M": [15, 20], "C": [10, 15], "S": [[8, 11], [10, 21], [10, 11]]}], [{"name": "D17S1301", "unit": 4, "base": 100, "M": [11, 11], "C": [10, 11], "S": [[10, 12], [10, 11], [10, 13]]}, {"name": "D13S317", "unit": 4, "base": 175, "M": [9, 14], "C": [9, 10], "S": [[10, 10], [10, 14], [10, 12]]}, {"name": "D2S441", "unit": 4, "base": 46, "M": [12, 14], "C": [12, 12], "S": [[11, 13], [11, 12], [12, 14]]}, {"name": "D21S11", "unit": 4, "base": 89, "M": [27, 34], "C": [28, 34], "S": [[28, 32], [28, 33], [28, 30]]}, {"name": "TPOX", "unit": 4, "base": 198, "M": [11, 11], "C": [7, 11], "S": [[7, 9], [7, 7], [7, 9]]}, {"name": "FGA", "unit": 4, "base": 150, "M": [22, 23], "C": [23, 26], "S": [[26, 28], [23, 24], [24, 26]]}]], "father": 2, "excl": {"(0, 0)": [0], "(2, 4)": [0], "(3, 2)": [0], "(1, 5)": [1], "(2, 1)": [1], "(3, 5)": [1]}}, "3": {"gels": [[{"name": "SE33", "unit": 4, "base": 230, "M": [17, 18], "C": [17, 27], "S": [[21, 27], [17, 27], [17, 27]]}, {"name": "D6S1043", "unit": 4, "base": 240, "M": [13, 15], "C": [15, 17], "S": [[16, 17], [17, 17], [10, 17]]}, {"name": "D12S391", "unit": 4, "base": 145, "M": [20, 21], "C": [21, 21], "S": [[18, 21], [21, 24], [17, 21]]}, {"name": "D13S317", "unit": 4, "base": 175, "M": [11, 13], "C": [11, 11], "S": [[11, 11], [11, 11], [11, 11]]}, {"name": "D20S482", "unit": 4, "base": 60, "M": [14, 15], "C": [15, 15], "S": [[15, 15], [15, 15], [15, 17]]}, {"name": "D17S1301", "unit": 4, "base": 100, "M": [11, 11], "C": [11, 11], "S": [[11, 11], [10, 13], [11, 11]]}, {"name": "vWA", "unit": 4, "base": 108, "M": [15, 17], "C": [15, 15], "S": [[15, 16], [15, 19], [15, 16]]}], [{"name": "D1S1656", "unit": 4, "base": 130, "M": [15, 15], "C": [11, 15], "S": [[11, 14], [11, 16], [11, 11]]}, {"name": "D16S539", "unit": 4, "base": 232, "M": [7, 11], "C": [7, 8], "S": [[8, 9], [8, 10], [7, 8]]}, {"name": "D21S11", "unit": 4, "base": 89, "M": [26, 30], "C": [30, 31], "S": [[28, 31], [30, 31], [29, 30]]}, {"name": "TH01", "unit": 4, "base": 145, "M": [8, 10], "C": [8, 11], "S": [[5, 11], [11, 11], [11, 11]]}, {"name": "D6S474", "unit": 4, "base": 100, "M": [15, 15], "C": [15, 15], "S": [[15, 15], [15, 15], [15, 16]]}, {"name": "D2S1338", "unit": 4, "base": 255, "M": [23, 25], "C": [22, 25], "S": [[18, 22], [22, 26], [19, 22]]}], [{"name": "D7S820", "unit": 4, "base": 231, "M": [10, 11], "C": [10, 11], "S": [[9, 11], [10, 10], [10, 11]]}, {"name": "TPOX", "unit": 4, "base": 198, "M": [7, 9], "C": [7, 7], "S": [[7, 11], [8, 9], [7, 12]]}, {"name": "D5S818", "unit": 4, "base": 106, "M": [9, 9], "C": [9, 13], "S": [[13, 14], [10, 13], [11, 13]]}, {"name": "D22S1045", "unit": 3, "base": 50, "M": [12, 18], "C": [12, 14], "S": [[14, 16], [13, 14], [14, 14]]}, {"name": "D18S51", "unit": 4, "base": 226, "M": [22, 23], "C": [20, 22], "S": [[15, 20], [15, 20], [12, 20]]}, {"name": "D3S1358", "unit": 4, "base": 63, "M": [18, 19], "C": [18, 19], "S": [[14, 18], [19, 19], [15, 19]]}, {"name": "CSF1PO", "unit": 4, "base": 277, "M": [8, 9], "C": [9, 9], "S": [[9, 9], [9, 9], [8, 9]]}, {"name": "D2S441", "unit": 4, "base": 46, "M": [11, 12], "C": [10, 12], "S": [[10, 11], [10, 14], [10, 13]]}], [{"name": "Penta D", "unit": 5, "base": 370, "M": [10, 12], "C": [4, 12], "S": [[4, 11], [4, 8], [4, 15]]}, {"name": "D10S1248", "unit": 4, "base": 50, "M": [15, 15], "C": [13, 15], "S": [[12, 13], [13, 15], [13, 13]]}, {"name": "D11S4463", "unit": 4, "base": 70, "M": [12, 16], "C": [12, 16], "S": [[12, 16], [12, 12], [12, 16]]}, {"name": "Penta E", "unit": 5, "base": 355, "M": [15, 16], "C": [13, 16], "S": [[13, 14], [13, 13], [12, 14]]}, {"name": "D1S1677", "unit": 4, "base": 50, "M": [14, 15], "C": [14, 14], "S": [[13, 14], [14, 15], [14, 15]]}, {"name": "D8S1179", "unit": 4, "base": 91, "M": [11, 15], "C": [15, 16], "S": [[15, 16], [16, 16], [14, 16]]}, {"name": "D14S1434", "unit": 4, "base": 50, "M": [14, 15], "C": [13, 14], "S": [[13, 13], [13, 13], [13, 15]]}]], "father": 0, "excl": {"(0, 5)": [1], "(2, 1)": [1], "(1, 2)": [2], "(3, 3)": [2]}}};
+
+const LEVELS = [
+ {title:"NÍVEL 1 — INVESTIGAÇÃO INICIAL", diff:"Intermediária",
+  caseText:"Caso 1: Joana procura o pai biológico do pequeno Davi. Três homens aceitaram fazer o exame.",
+  done:"Investigação inicial concluída!",
+  chars:[
+   {skin:"#e8b48a",hair:"slick",hc:"#2b1a10",facial:"mustache",acc:"none",shirt:"#2a7de1",pat:"stripes",expr:"nervous"},
+   {skin:"#8d5a3b",hair:"bald",hc:"#2b1a10",facial:"beard",acc:"glasses",shirt:"#f2a30f",pat:"plain",expr:"smile"},
+   {skin:"#f1c9a5",hair:"cap",hc:"#c0392b",facial:"none",acc:"earring",shirt:"#22b36a",pat:"hawaii",expr:"smug"}]},
+ {title:"NÍVEL 2 — INVESTIGAÇÃO AVANÇADA", diff:"Difícil",
+  caseText:"Caso 2: Luana, 19 anos, quer saber quem é o pai. Dois dos suspeitos são da mesma cidade e dizem que o exame vai “dar empate”.",
+  done:"Você está se tornando um especialista em genética forense!",
+  chars:[
+   {skin:"#c68a5e",hair:"afro",hc:"#1a1a1a",facial:"goatee",acc:"sunglasses",shirt:"#8e44ad",pat:"plain",expr:"smug"},
+   {skin:"#f3d2b3",hair:"curly",hc:"#d4a017",facial:"none",acc:"bowtie",shirt:"#d63031",pat:"suit",expr:"worried"},
+   {skin:"#6b4027",hair:"short",hc:"#111111",facial:"mustache",acc:"hat",shirt:"#16a085",pat:"stripes",expr:"smile"}]},
+ {title:"NÍVEL 3 — DESAFIO FORENSE", diff:"Muito difícil",
+  caseText:"Caso 3: amostra enviada pela Justiça. Os três suspeitos se parecem muito no gel. Só a análise locus a locus resolve.",
+  done:"Desafio forense concluído! Você dominou a interpretação dos perfis STR!",
+  chars:[
+   {skin:"#a96f47",hair:"mohawk",hc:"#e84393",facial:"none",acc:"earring",shirt:"#34495e",pat:"plain",expr:"smug"},
+   {skin:"#e0ac83",hair:"long",hc:"#5b3a1e",facial:"beard",acc:"none",shirt:"#e67e22",pat:"hawaii",expr:"nervous"},
+   {skin:"#7a4a2e",hair:"short",hc:"#8a8a8a",facial:"mustache",acc:"glasses",shirt:"#2c3e50",pat:"suit",expr:"worried"}]}
+];
+const POINTS=[100,80,60,40];
+const COOLDOWN=[12,18,24];
+const LANES=["Mãe","Filho(a)","Susp. 1","Susp. 2","Susp. 3"];
+
+/* ---------- genética ---------- */
+function patOptions(M,C){const P=new Set();if(M.includes(C[0]))P.add(C[1]);if(M.includes(C[1]))P.add(C[0]);return P;}
+function compat(M,C,S){const P=patOptions(M,C);return S.some(a=>P.has(a));}
+function origin(M,C){
+  const P=[...patOptions(M,C)];
+  if(C[0]===C[1]) return {type:"homo",mat:C[0],pat:C[0],P};
+  const in0=M.includes(C[0]),in1=M.includes(C[1]);
+  if(in0&&in1) return {type:"amb",P};
+  if(in0) return {type:"het",mat:C[0],pat:C[1],P};
+  return {type:"het",mat:C[1],pat:C[0],P};
+}
+function lv(){return GENO[String(S.lv+1)];}
+function exclusionsOf(i){
+  const out=[];lv().gels.forEach((g,gi)=>g.forEach(l=>{if(!compat(l.M,l.C,l.S[i]))out.push({g:gi,name:l.name});}));return out;
+}
+
+/* ---------- personagens ---------- */
+function drawChar(p){
+  const s=p.skin,h=p.hc;let o=`<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`;
+  // corpo
+  o+=`<path d="M14 150 C16 112 34 102 60 102 C86 102 104 112 106 150Z" fill="${p.shirt}"/>`;
+  if(p.pat==="stripes") for(let x=22;x<104;x+=12) o+=`<rect x="${x}" y="104" width="5" height="46" fill="rgba(255,255,255,.28)"/>`;
+  if(p.pat==="hawaii") [[30,122],[52,136],[80,120],[92,140],[64,116],[40,142]].forEach(([x,y])=>o+=`<circle cx="${x}" cy="${y}" r="5" fill="#fff59d"/><circle cx="${x}" cy="${y}" r="2" fill="#e84393"/>`);
+  if(p.pat==="suit") o+=`<path d="M48 103 L60 128 L72 103 Z" fill="#fff"/><path d="M42 104 L58 150 L36 150 L28 110Z M78 104 L62 150 L84 150 L92 110Z" fill="rgba(0,0,0,.28)"/>`;
+  o+=`<rect x="50" y="88" width="20" height="18" rx="6" fill="${s}"/><path d="M50 100 Q60 108 70 100" stroke="rgba(0,0,0,.15)" stroke-width="3" fill="none"/>`;
+  if(p.acc==="bowtie") o+=`<path d="M60 108 L46 101 L46 115Z M60 108 L74 101 L74 115Z" fill="#111"/><circle cx="60" cy="108" r="3.5" fill="#111"/>`;
+  if(p.hair==="long") o+=`<path d="M28 58 C26 92 36 104 44 100 L44 60Z M92 58 C94 92 84 104 76 100 L76 60Z" fill="${h}"/>`;
+  if(p.hair==="afro") o+=`<circle cx="60" cy="48" r="40" fill="${h}"/>`;
+  // orelhas e cabeça
+  o+=`<ellipse cx="31" cy="62" rx="6" ry="9" fill="${s}"/><ellipse cx="89" cy="62" rx="6" ry="9" fill="${s}"/>`;
+  o+=`<ellipse cx="60" cy="60" rx="29" ry="33" fill="${s}"/>`;
+  if(p.acc==="earring") o+=`<circle cx="90" cy="72" r="3" fill="none" stroke="#ffd21f" stroke-width="2"/>`;
+  // cabelo
+  if(p.hair==="slick") o+=`<path d="M31 52 C31 26 52 20 66 22 C84 24 92 38 90 54 C84 42 70 36 52 38 C42 39 36 44 31 52Z" fill="${h}"/>`;
+  if(p.hair==="short") o+=`<path d="M31 56 C29 30 46 24 60 24 C76 24 92 32 89 56 C86 46 82 40 74 38 C64 42 50 42 40 38 C35 42 32 48 31 56Z" fill="${h}"/>`;
+  if(p.hair==="curly") for(let i=0;i<9;i++){const a=Math.PI*(0.98+i*0.13);o+=`<circle cx="${60+31*Math.cos(a)}" cy="${56+27*Math.sin(a)}" r="9" fill="${h}"/>`;}
+  if(p.hair==="mohawk") o+=`<path d="M52 34 L50 6 L58 20 L60 2 L64 20 L71 6 L68 34Z" fill="${h}"/><path d="M33 52 C34 40 40 34 48 31 L48 40Z M87 52 C86 40 80 34 72 31 L72 40Z" fill="rgba(0,0,0,.18)"/>`;
+  if(p.hair==="long") o+=`<path d="M30 58 C28 28 48 22 60 22 C76 22 94 30 90 58 C84 40 70 34 60 34 C48 34 38 40 30 58Z" fill="${h}"/>`;
+  if(p.hair==="afro") o+=`<path d="M33 48 C38 36 50 32 60 32 C72 32 82 36 87 48" stroke="${h}" stroke-width="6" fill="none"/>`;
+  if(p.hair==="bald") o+=`<ellipse cx="50" cy="38" rx="9" ry="5" fill="rgba(255,255,255,.22)" transform="rotate(-20 50 38)"/><path d="M31 62 C30 52 33 48 36 50 L36 64Z M89 62 C90 52 87 48 84 50 L84 64Z" fill="${h}"/>`;
+  if(p.hair==="cap") o+=`<path d="M30 50 C30 26 46 18 60 18 C76 18 90 26 90 50Z" fill="${h}"/><path d="M60 46 C74 44 96 46 104 52 C96 54 76 52 60 52Z" fill="${h}" opacity=".85"/><circle cx="60" cy="19" r="3" fill="#fff"/><rect x="50" y="30" width="20" height="10" rx="2" fill="#fff" opacity=".9"/><text x="60" y="38.5" font-size="8" font-family="Arial" font-weight="700" text-anchor="middle" fill="${h}">DNA</text>`;
+  if(p.acc==="hat") o+=`<ellipse cx="60" cy="36" rx="42" ry="8" fill="#5a3b1c"/><path d="M38 36 C38 14 46 10 60 10 C74 10 82 14 82 36Z" fill="#6d4823"/><rect x="38" y="28" width="44" height="6" fill="#2c1a0b"/>`;
+  // sobrancelhas e olhos por expressão
+  const e=p.expr;
+  const br={nervous:"M41 48 L52 44 M68 44 L79 48",smile:"M41 46 Q47 42 53 46 M67 46 Q73 42 79 46",smug:"M41 46 L53 47 M67 44 L79 42",worried:"M41 44 L53 48 M67 48 L79 44"}[e];
+  o+=`<path d="${br}" stroke="${p.hair==='bald'||p.hair==='cap'?'#3a2416':h}" stroke-width="3.2" stroke-linecap="round" fill="none"/>`;
+  if(p.acc==="sunglasses") o+=`<rect x="38" y="51" width="19" height="11" rx="4" fill="#111"/><rect x="63" y="51" width="19" height="11" rx="4" fill="#111"/><path d="M57 55 L63 55" stroke="#111" stroke-width="2"/><path d="M42 54 L48 54" stroke="#fff" stroke-width="1.5" opacity=".6"/>`;
+  else{
+    if(e==="smug") o+=`<path d="M42 57 Q47 54 52 57" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M68 57 Q73 54 78 57" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    else o+=`<circle cx="47" cy="56" r="${e==='nervous'?4.4:3.6}" fill="#fff"/><circle cx="73" cy="56" r="${e==='nervous'?4.4:3.6}" fill="#fff"/><circle cx="47" cy="56.5" r="2.2" fill="#222"/><circle cx="73" cy="56.5" r="2.2" fill="#222"/>`;
+    if(p.acc==="glasses") o+=`<circle cx="47" cy="56" r="8" fill="none" stroke="#222" stroke-width="2.4"/><circle cx="73" cy="56" r="8" fill="none" stroke="#222" stroke-width="2.4"/><path d="M55 56 L65 56" stroke="#222" stroke-width="2.4"/>`;
+  }
+  o+=`<path d="M60 58 Q56 68 59 70" stroke="rgba(0,0,0,.25)" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  // pelos faciais
+  if(p.facial==="beard") o+=`<path d="M32 64 C32 92 46 96 60 96 C74 96 88 92 88 64 C84 76 76 82 60 82 C44 82 36 76 32 64Z" fill="${p.hair==='bald'?'#2b1a10':h}"/>`;
+  if(p.facial==="goatee") o+=`<path d="M52 82 C52 90 56 94 60 94 C64 94 68 90 68 82 C64 85 56 85 52 82Z" fill="${h}"/>`;
+  // boca
+  const mouth={nervous:`<path d="M50 80 Q53 77 56 80 Q59 83 62 80 Q65 77 70 80" stroke="#6b1d1d" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+    smile:`<path d="M48 77 Q60 89 72 77Z" fill="#6b1d1d"/><path d="M51 78 L69 78" stroke="#fff" stroke-width="3"/>`,
+    smug:`<path d="M50 80 Q62 84 72 76" stroke="#6b1d1d" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    worried:`<path d="M50 83 Q60 75 70 83" stroke="#6b1d1d" stroke-width="3" fill="none" stroke-linecap="round"/>`}[e];
+  if(p.facial==="mustache") o+=mouth+`<path d="M44 76 C48 68 56 70 60 73 C64 70 72 68 76 76 C70 74 64 76 60 75 C56 76 50 74 44 76Z" fill="${p.hair==='bald'?'#2b1a10':h}"/>`;
+  else o+=mouth;
+  if(e==="nervous"||e==="worried") o+=`<path d="M86 40 Q90 47 86 50 Q82 47 86 40Z" fill="#9fe3ff"/>`;
+  return o+`</svg>`;
+}
+
+/* ---------- estado ---------- */
+let S;
+function fresh(){return {lv:0,score:0,res:[null,null,null],errors:0,attempts:0,locked:false,solved:false,sel:null,view:0,
+  labels:true,guide:null,notes:{},hinted:{},start:0,elapsed:0,flagGel:null,cdTimer:null,totalAttempts:0};}
+const $=id=>document.getElementById(id);
+
+/* ---------- gel ---------- */
+const PX=2.7, X0=118, LW=72, TOPH=62;
+function gelSVG(gi){
+  const g=lv().gels[gi], F=lv().father, solved=S.solved;
+  const wins=g.map((l,li)=>{const al=[...l.M,...l.C,...l.S.flat()];const lo=Math.min(...al)-2,hi=Math.max(...al)+2;
+    return {l,li,lo,hi,bpLo:l.base+lo*l.unit,bpHi:l.base+hi*l.unit};}).sort((a,b)=>b.bpHi-a.bpHi);
+  let y=TOPH;wins.forEach(w=>{w.y=y;w.h=(w.bpHi-w.bpLo)*PX+16;y+=w.h+10;});
+  const W=X0+5*LW+8,H=y+6;
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gel ${gi+1}: ${g.length} loci STR, cinco canaletas">`;
+  o+=`<defs><filter id="glow${gi}" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <linearGradient id="gg${gi}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d2a33"/><stop offset="1" stop-color="#061419"/></linearGradient></defs>`;
+  o+=`<rect x="${X0-6}" y="${TOPH-22}" width="${5*LW+10}" height="${H-TOPH+20}" rx="8" fill="url(#gg${gi})"/>`;
+  LANES.forEach((n,k)=>{const x=X0+k*LW;const col=k===0?"#ff9fd0":k===1?"#9fe3ff":"#e9e3ff";
+    o+=`<text x="${x+LW/2}" y="16" text-anchor="middle" font-size="12.5" font-weight="700" fill="${col}" font-family="system-ui,sans-serif">${n}</text>`;
+    o+=`<text x="${x+LW/2}" y="30" text-anchor="middle" font-size="10" fill="#7fa9b5" font-family="system-ui,sans-serif">canaleta ${k+1}</text>`;
+    o+=`<rect x="${x+12}" y="${TOPH-16}" width="${LW-24}" height="7" rx="1.5" fill="#020a0d" stroke="#2b5562"/>`;
+    o+=`<rect x="${x+8}" y="${TOPH-6}" width="${LW-16}" height="${H-TOPH}" fill="rgba(140,220,255,.035)"/>`;});
+  o+=`<text x="${X0-34}" y="${TOPH-12}" text-anchor="middle" font-size="10" fill="#7fa9b5" font-family="system-ui,sans-serif">pb</text>`;
+  wins.forEach((w,wi)=>{
+    const l=w.l, top=w.y, bot=w.y+w.h;
+    const yOf=n=>top+8+(w.bpHi-(l.base+n*l.unit))*PX;
+    o+=`<line x1="4" x2="${W-4}" y1="${top-5}" y2="${top-5}" stroke="#25485a" stroke-dasharray="3 4"/>`;
+    o+=`<text x="6" y="${top+12}" font-size="13" font-weight="700" fill="#ffe08a" font-family="system-ui,sans-serif">${l.name}</text>`;
+    o+=`<text x="6" y="${top+26}" font-size="9.5" fill="#7fa9b5" font-family="system-ui,sans-serif">${l.unit===5?"penta":"tetra"}nucleotídeo</text>`;
+    o+=`<line x1="${X0-12}" x2="${X0-12}" y1="${yOf(w.hi)}" y2="${yOf(w.lo)}" stroke="#4d7c8a"/>`;
+    for(let n=w.lo;n<=w.hi;n++){const yy=yOf(n);const lab=(n-w.lo)%2===0;
+      o+=`<line x1="${X0-(lab?18:15)}" x2="${X0-12}" y1="${yy}" y2="${yy}" stroke="#4d7c8a"/>`;
+      if(lab) o+=`<text x="${X0-21}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8fbac6" font-family="system-ui,sans-serif">${l.base+n*l.unit}</text>`;}
+    const og=origin(l.M,l.C);
+    const gl=S.guide&&S.guide.g===gi&&S.guide.w===l.name?S.guide.a:null;
+    if(gl!==null) o+=`<line x1="${X0}" x2="${X0+5*LW}" y1="${yOf(gl)+3}" y2="${yOf(gl)+3}" stroke="#ffd21f" stroke-width="1.2" stroke-dasharray="5 3"/>`;
+    const lanes=[l.M,l.C,...l.S];
+    lanes.forEach((gen,k)=>{
+      const x=X0+k*LW, uniq=[...new Set(gen)], homo=gen[0]===gen[1];
+      uniq.forEach(a=>{
+        const yy=yOf(a); let fill="var(--banda)", stroke="none", sw=0, op=homo?1:.86;
+        if(gl!==null&&a!==gl) op=.28;
+        if(gl!==null&&a===gl){stroke="#ffffff";sw=1.2;}
+        let extra="";
+        if(solved){
+          if(k===1){
+            if(og.type==="amb") fill="var(--amb)";
+            else if(og.type==="homo"){ fill="var(--mat)"; extra=`<rect x="${x+8+(S.labels?LW-30:LW-16)/2}" y="${yy}" width="${(S.labels?LW-30:LW-16)/2}" height="6" fill="var(--pat)" pointer-events="none"/>`; }
+            else fill=a===og.mat?"var(--mat)":"var(--pat)";
+          }
+          if(k===0 && l.C.includes(a)){stroke="var(--mat)";sw=1.6;}
+          if(k===F+2 && og.P.includes(a)){stroke="var(--ouro)";sw=2;fill="#fff2b0";}
+        }
+        o+=`<rect data-a="${a}" data-w="${l.name}" data-g="${gi}" x="${x+8}" y="${yy}" width="${S.labels?LW-30:LW-16}" height="6" rx="1.5" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" opacity="${op}" filter="url(#glow${gi})"/>`+extra;
+        if(S.labels) o+=`<text x="${x+LW-5}" y="${yy+6}" font-size="9.5" font-weight="600" text-anchor="end" fill="#cfe9f1" opacity="${op}" font-family="system-ui,sans-serif" pointer-events="none">${a}</text>`;
+      });
+      if(solved&&k>=2&&!compat(l.M,l.C,gen)){
+        o+=`<rect x="${x+4}" y="${top-2}" width="${LW-8}" height="${w.h}" rx="5" fill="rgba(227,38,46,.16)" stroke="#e3262e" stroke-width="1.4"/>`;
+        o+=`<text x="${x+LW/2}" y="${top+14}" text-anchor="middle" font-size="15" font-weight="800" fill="#ff6b72" font-family="system-ui,sans-serif">✗</text>`;
+      }
+    });
+  });
+  return o+`</svg>`;
+}
+function renderGels(){
+  const box=$("gels");
+  const ids=S.view==="all"?[0,1,2,3]:[S.view];
+  box.className="gels"+(S.view==="all"?" all":"");
+  box.innerHTML=ids.map(i=>`<div class="gelbox"><h3>Gel ${i+1} · ${lv().gels[i].length} loci STR</h3>${gelSVG(i)}</div>`).join("");
+  renderTabs();
+}
+function renderTabs(){
+  const t=$("tabs");const items=[0,1,2,3,"all"];
+  t.innerHTML=items.map(v=>`<button class="tab${S.flagGel===v?" flag":""}" role="tab" aria-selected="${S.view===v}" data-v="${v}">${v==="all"?"Os 4 géis":"Gel "+(v+1)}</button>`).join("");
+}
+$("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;const v=b.dataset.v;S.view=v==="all"?"all":+v;if(S.flagGel===S.view)S.flagGel=null;S.guide=null;renderGels();});
+$("gels").addEventListener("click",e=>{const r=e.target.closest("[data-a]");if(!r){if(S.guide){S.guide=null;renderGels();}return;}
+  const a=+r.dataset.a,w=r.dataset.w,g=+r.dataset.g;
+  S.guide=(S.guide&&S.guide.g===g&&S.guide.w===w&&S.guide.a===a)?null:{g,w,a};renderGels();});
+$("chkLabels").addEventListener("change",e=>{S.labels=e.target.checked;renderGels();});
+
+/* ---------- caderno ---------- */
+function renderNotebook(){
+  const n=S.notes;let o=`<tr><th></th>${[1,2,3,4].map(i=>`<th>Gel ${i}</th>`).join("")}</tr>`;
+  for(let s=0;s<3;s++){o+=`<tr><td>Susp. ${s+1}</td>`;for(let g=0;g<4;g++){const v=n[s+"-"+g]||0;
+    o+=`<td><button class="nbc ${v===1?"ok":v===2?"x":""}" data-k="${s}-${g}" aria-label="Suspeito ${s+1}, gel ${g+1}: ${["não analisado","compatível","incompatível"][v]}">${["·","✓","✗"][v]}</button></td>`;}o+=`</tr>`;}
+  $("nb").innerHTML=o;
+  $("legend").innerHTML=S.solved?`<div><i style="background:var(--mat)"></i>Alelo materno da criança</div><div><i style="background:var(--pat)"></i>Alelo paterno obrigatório</div><div><i style="background:var(--amb)"></i>Origem ambígua (criança = mãe)</div><div><i style="background:#fff2b0;outline:2px solid var(--ouro)"></i>Alelo do pai que explica a criança</div><div><i style="background:rgba(227,38,46,.3);outline:1.5px solid #e3262e"></i>Locus incompatível (exclusão)</div>`
+    :`<div><i style="background:var(--banda)"></i>Banda de DNA (alelo STR)</div><div><i style="background:none;border-top:2px dashed var(--amarelo)"></i>Linha de comparação</div>`;
+}
+$("nb").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;const k=b.dataset.k;S.notes[k]=((S.notes[k]||0)+1)%3;renderNotebook();});
+
+/* ---------- palco ---------- */
+function renderBench(){
+  const L=LEVELS[S.lv];
+  $("caseText").textContent=L.caseText;
+  $("bench").innerHTML=L.chars.map((c,i)=>`<div class="suspect" data-i="${i}" tabindex="0" role="button" aria-label="Suspeito ${i+1}">${drawChar(c)}<span class="tag">SUSPEITO ${i+1}</span></div>`).join("");
+  $("slot").innerHTML="";
+}
+function updateHUD(){
+  $("hudLevel").textContent=S.lv+1;$("hudScore").textContent=S.score;$("hudAtt").textContent=S.attempts;
+  const t=Math.floor((S.solved?S.elapsed:(Date.now()-S.start))/1000);
+  $("hudTime").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+}
+setInterval(()=>{if(S&&S.start&&!S.solved)updateHUD();},500);
+function select(i){
+  if(S.locked||S.solved)return;
+  S.sel=S.sel===i?null:i;
+  document.querySelectorAll(".suspect").forEach(el=>el.classList.toggle("sel",+el.dataset.i===S.sel));
+  const b=$("btnSend");b.disabled=S.sel===null;b.textContent=S.sel===null?"Escolha um suspeito":`Levar o Suspeito ${S.sel+1} à cabine`;
+  $("dropHint").textContent=S.sel===null?"Arraste um suspeito até aqui":"Toque aqui para confirmar";
+}
+$("btnSend").addEventListener("click",()=>{if(S.sel!==null)submit(S.sel);});
+$("booth").addEventListener("click",()=>{if(S.sel!==null)submit(S.sel);});
+$("booth").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&S.sel!==null){e.preventDefault();submit(S.sel);}});
+$("bench").addEventListener("keydown",e=>{const el=e.target.closest(".suspect");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();select(+el.dataset.i);}});
+
+/* arrastar e soltar com Pointer Events (mouse, toque e caneta) */
+let drag=null;
+$("bench").addEventListener("pointerdown",e=>{
+  const el=e.target.closest(".suspect");if(!el||S.locked||S.solved)return;
+  drag={el,i:+el.dataset.i,x:e.clientX,y:e.clientY,moved:false,ghost:null,id:e.pointerId};
+  el.setPointerCapture(e.pointerId);
+});
+$("bench").addEventListener("pointermove",e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.moved&&Math.hypot(dx,dy)>8){drag.moved=true;const g=document.createElement("div");g.className="ghost";g.innerHTML=drawChar(LEVELS[S.lv].chars[drag.i]);document.body.appendChild(g);drag.ghost=g;drag.el.style.opacity=".3";}
+  if(drag.moved){drag.ghost.style.left=e.clientX+"px";drag.ghost.style.top=e.clientY+"px";$("booth").classList.toggle("over",overBooth(e));}
+});
+function overBooth(e){const r=$("booth").getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;}
+function endDrag(e,cancel){
+  if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;
+  $("booth").classList.remove("over");d.el.style.opacity="";
+  if(d.ghost)d.ghost.remove();
+  if(!d.moved){if(!cancel)select(d.i);return;}
+  if(!cancel&&overBooth(e))submit(d.i);else{d.el.classList.add("bounce");setTimeout(()=>d.el.classList.remove("bounce"),600);}
+}
+$("bench").addEventListener("pointerup",e=>endDrag(e,false));
+$("bench").addEventListener("pointercancel",e=>endDrag(e,true));
+
+/* ---------- resposta ---------- */
+function verdict(txt,cls){const v=$("verdict");v.textContent=txt;v.className="verdict "+cls+" show";}
+function submit(i){
+  if(S.locked||S.solved)return;
+  S.attempts++;S.totalAttempts++;select(null);updateHUD();
+  const el=document.querySelector(`.suspect[data-i="${i}"]`);
+  $("slot").innerHTML=drawChar(LEVELS[S.lv].chars[i]);el.classList.add("away");
+  if(i===lv().father){setTimeout(()=>right(i),450);return;}
+  S.locked=true;$("room").classList.add("locked");
+  setTimeout(()=>{
+    $("booth").classList.add("wrong");verdict("NÃO É O PAI!","no");
+    setTimeout(()=>{$("slot").innerHTML="";el.classList.remove("away");el.classList.add("bounce");setTimeout(()=>el.classList.remove("bounce"),600);},1100);
+    setTimeout(()=>{$("booth").classList.remove("wrong");$("verdict").classList.remove("show");},1800);
+    S.errors++;showHint(i);
+  },450);
+}
+function showHint(i){
+  const n=S.errors;let title,text,gel=null;
+  if(n===1){title="Calma! Primeira dica: o conceito";
+    text="Antes de escolher novamente, lembre-se: metade dos alelos da criança veio da mãe e metade veio do pai. Comece identificando, em cada locus, quais alelos podem ser explicados pelo perfil materno.";}
+  else if(n===3){title="Terceira dica: foque no que falta explicar";
+    text="Você já identificou corretamente a contribuição materna? Agora concentre sua análise nos loci em que a criança apresenta um alelo que não aparece no perfil da mãe. Compare essa posição com os três suspeitos. Cuidado com alelos vizinhos: uma repetição a mais ou a menos já é outro alelo.";}
+  else{
+    const ex=exclusionsOf(i);S.hinted[i]=S.hinted[i]||[];
+    const pick=ex.find(x=>!S.hinted[i].includes(x.name))||ex[0];S.hinted[i].push(pick.name);gel=pick.g;
+    title=n===2?"Segunda dica: olhe com lupa":"Mais uma pista sobre esse suspeito";
+    text=`Observe novamente o Gel ${pick.g+1}, locus ${pick.name}. Nele, o Suspeito ${i+1} não apresenta o alelo necessário para explicar a herança paterna da criança. Lembre também: na rotina forense, só se exclui um suposto pai com incompatibilidades em pelo menos dois loci.`;}
+  $("hintTitle").textContent=title;$("hintText").textContent=text;
+  const go=$("btnGoGel");go.hidden=gel===null;
+  if(gel!==null){go.textContent=`Abrir o Gel ${gel+1}`;go.onclick=()=>{S.view=gel;S.flagGel=null;renderGels();document.querySelector(".lab").scrollIntoView({behavior:"smooth"});};S.flagGel=gel;renderTabs();}
+  const total=COOLDOWN[Math.min(n,3)-1];let left=total;
+  $("hint").classList.add("show");$("btnUnlock").disabled=true;$("lockText").textContent=`Escolha bloqueada: revise os géis (${left}s)`;
+  const tick=()=>{$("ringNum").textContent=left;$("ring").style.setProperty("--p",(total-left)/total*100);$("lockText").textContent=left>0?`Escolha bloqueada: revise os géis (${left}s)`:"Libere a nova tentativa abaixo";};
+  tick();clearInterval(S.cdTimer);
+  S.cdTimer=setInterval(()=>{left--;tick();if(left<=0){clearInterval(S.cdTimer);$("btnUnlock").disabled=false;}},1000);
+  setTimeout(()=>$("hint").scrollIntoView({behavior:"smooth",block:"nearest"}),300);
+}
+$("btnUnlock").addEventListener("click",()=>{S.locked=false;$("room").classList.remove("locked");$("hint").classList.remove("show");});
+
+function right(i){
+  clearInterval(S.cdTimer);$("hint").classList.remove("show");S.locked=false;$("room").classList.remove("locked");S.flagGel=null;
+  S.solved=true;S.elapsed=Date.now()-S.start;
+  const pts=POINTS[Math.min(S.errors,3)];S.score+=pts;
+  S.res[S.lv]={points:pts,attempts:S.attempts,errors:S.errors,time:S.elapsed};
+  $("booth").classList.add("right");verdict("TEMOS UM PAI!","yes");$("stage").classList.add("lit");
+  document.querySelectorAll(".suspect").forEach(el=>{if(+el.dataset.i!==i)el.style.opacity=".45";});
+  confetti();updateHUD();renderGels();renderNotebook();
+  setTimeout(()=>$("verdict").classList.remove("show"),2600);
+  setTimeout(showExplanation,2300);
+}
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const cols=["#ffd21f","#e3262e","#33c8ff","#ff5fae","#28d07b","#fff"];
+  for(let k=0;k<130;k++){const c=document.createElement("div");c.className="confetti";
+    c.style.left=Math.random()*100+"vw";c.style.background=cols[k%cols.length];c.style.animationDuration=(2+Math.random()*2.5)+"s";c.style.animationDelay=Math.random()*.6+"s";
+    if(k%3===0)c.style.borderRadius="50%";document.body.appendChild(c);setTimeout(()=>c.remove(),5500);}
+}
+
+/* ---------- explicação ---------- */
+function alSpan(a,cls){return `<span class="al ${cls}">${a}</span>`;}
+function showExplanation(){
+  const L=lv(),F=L.father,all=L.gels.flat();
+  let sum=`<div class="sumgrid">`;
+  for(let s=0;s<3;s++){const ex=exclusionsOf(s);
+    sum+=s===F?`<div class="win"><b>Suspeito ${s+1}: É O PAI</b><br>Compatível em ${all.length} de ${all.length} loci. Em todos eles, possui o alelo paterno exigido pela criança.</div>`
+      :`<div class="lose"><b>Suspeito ${s+1}: excluído</b><br>Incompatível em ${ex.length} loci: ${ex.map(x=>`${x.name} (gel ${x.g+1})`).join(", ")}.</div>`;}
+  sum+=`</div>`;
+  let rows="";
+  L.gels.forEach((g,gi)=>{rows+=`<tr class="gelrow"><td colspan="7">Gel ${gi+1}</td></tr>`;
+    g.forEach(l=>{const og=origin(l.M,l.C);
+      const mom=[...new Set(l.M)].map(a=>alSpan(a,l.C.includes(a)?"m":"none")).join("");
+      let kid,why;
+      if(og.type==="amb"){kid=l.C.map(a=>alSpan(a,"a")).join("");why=`Criança igual à mãe (${l.C.join("/")}): o pai pode ter doado ${l.C[0]} ou ${l.C[1]}.`;}
+      else if(og.type==="homo"){kid=alSpan(l.C[0],"m")+alSpan(l.C[1],"p");why=`Criança homozigota ${l.C[0]}/${l.C[1]}: a mãe doa um ${l.C[0]} e o pai precisa ter o outro ${l.C[0]}.`;}
+      else{kid=alSpan(og.mat,"m")+alSpan(og.pat,"p");why=`Mãe explica o ${og.mat}; o ${og.pat} precisa vir do pai.`;}
+      const sus=l.S.map((gen,s)=>{const ok=compat(l.M,l.C,gen);
+        const cells=[...new Set(gen)].map(a=>alSpan(a,og.P.includes(a)?"hit":"none")).join("");
+        if(gen[0]===gen[1]) return `<td class="${ok?(s===F?"father":""):"ex"}">${cells}<small> (homo)</small></td>`;
+        return `<td class="${ok?(s===F?"father":""):"ex"}">${cells}</td>`;}).join("");
+      const exs=l.S.map((gen,s)=>compat(l.M,l.C,gen)?null:`Susp. ${s+1} não tem ${og.P.join(" nem ")}`).filter(Boolean);
+      if(exs.length)why+=` <b style="color:#a3121a">${exs.join("; ")}.</b>`;
+      rows+=`<tr><td class="loc">${l.name}</td><td>${mom}</td><td>${kid}</td>${sus}<td class="why">${why}</td></tr>`;});});
+  const nAmb=all.filter(l=>origin(l.M,l.C).type==="amb").length,nHomo=all.filter(l=>l.C[0]===l.C[1]).length;
+  const html=`<h2 class="show">TEMOS UM PAI!</h2>
+  <p><b>Resultado da investigação:</b> o Suspeito ${F+1} é o pai biológico. Ele explica o alelo paterno da criança em todos os ${all.length} loci analisados nos quatro géis, enquanto cada um dos outros suspeitos falha em pelo menos dois loci.</p>
+  ${sum}
+  <h3>Tabela comparativa de genótipos (número de repetições)</h3>
+  <div class="tblwrap"><table class="res"><thead><tr><th>Locus</th><th>Mãe</th><th>Filho(a)</th><th>Susp. 1</th><th>Susp. 2</th><th>Susp. 3</th><th>Raciocínio</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p style="font-size:14px;margin-top:8px">${alSpan("m","m")} alelo materno ${alSpan("p","p")} alelo paterno obrigatório ${alSpan("a","a")} origem ambígua ${alSpan("✓","hit")} alelo do suspeito capaz de explicar a herança paterna. Células vermelhas marcam exclusões.</p>
+  <div class="teach"><b>Para discutir com a turma</b><ul>
+   <li>Cada locus STR autossômico tem dois alelos: um materno e um paterno. Primeiro se “subtrai” a contribuição da mãe; o alelo que sobra é o <b>alelo paterno obrigatório</b>.</li>
+   <li>Um suspeito é compatível em um locus quando possui o alelo paterno obrigatório. Compartilhar bandas não basta: em vários loci, suspeitos excluídos tinham justamente o alelo materno da criança, ou um alelo vizinho (uma repetição a mais ou a menos).</li>
+   <li>${nHomo?`Neste caso, a criança é homozigota em ${nHomo===1?"1 locus":nHomo+" loci"} (uma banda só, mais intensa): mãe e pai doaram o mesmo alelo. `:""}${nAmb?`Em ${nAmb===1?"1 locus":nAmb+" loci"} a criança é idêntica à mãe; ali qualquer um dos dois alelos pode ser o paterno, e o locus exclui menos suspeitos.`:"Neste caso não houve locus em que a criança fosse idêntica à mãe; quando isso acontece, qualquer um dos dois alelos pode ser o paterno e o locus exclui menos."}</li>
+   <li>Por que exigir pelo menos dois loci incompatíveis? STRs sofrem mutação por deslizamento da polimerase com taxa da ordem de 10⁻³ por locus por geração. Uma única incompatibilidade pode ser mutação; duas ou mais tornam a exclusão segura.</li>
+   <li>Na rotina real, a inclusão é expressa pelo Índice de Paternidade Combinado e pela probabilidade de paternidade, calculados a partir das frequências alélicas da população. Este jogo trabalha apenas o raciocínio de compatibilidade; os tamanhos em pb são didáticos.</li></ul></div>
+  <div class="actions"><button class="btn" id="btnNext">${S.lv<2?"Continuar":"Ver o resultado final"}</button><button class="btn sec" id="btnCloseExp">Voltar aos géis anotados</button></div>`;
+  openModal(html);
+  $("btnNext").onclick=()=>{closeModal();transition();};
+  $("btnCloseExp").onclick=()=>{closeModal();showContinue();};
+}
+function showContinue(){const b=$("btnSend");b.disabled=false;b.textContent="Ver explicação e continuar";b.onclick=()=>{b.onclick=null;showExplanation();};}
+
+function transition(){
+  const L=LEVELS[S.lv],r=S.res[S.lv];
+  if(S.lv===2){finalScreen();return;}
+  openModal(`<h2 class="show">${L.done}</h2><p class="big">+${r.points}</p>
+   <p>Pontos neste nível, com ${r.attempts} tentativa(s) em ${fmt(r.time)}. Pontuação acumulada: <b>${S.score}</b>.</p>
+   <p>Próximo: <b>${LEVELS[S.lv+1].title}</b> (${LEVELS[S.lv+1].diff}). Mais loci por gel e suspeitos cada vez mais parecidos.</p>
+   <div class="actions"><button class="btn" id="btnGo">Começar o nível ${S.lv+2}</button></div>`,true);
+  $("btnGo").onclick=()=>{closeModal();startLevel(S.lv+1);};
+}
+function fmt(ms){const t=Math.round(ms/1000);return `${Math.floor(t/60)} min ${t%60} s`;}
+function perfTable(){
+  return `<table class="perf"><tr><th>Nível</th><th>Situação</th><th>Pontos</th><th>Tentativas</th><th>Tempo</th></tr>${LEVELS.map((L,i)=>{const r=S.res[i];
+    return `<tr><td>${i+1}. ${L.title.split("— ")[1]}</td><td>${r?"Concluído":i===S.lv?"Em andamento":"Bloqueado"}</td><td>${r?r.points:"–"}</td><td>${r?r.attempts:(i===S.lv?S.attempts:"–")}</td><td>${r?fmt(r.time):"–"}</td></tr>`;}).join("")}</table>`;
+}
+function finalScreen(){
+  const done=S.res.filter(Boolean);const tt=done.reduce((a,r)=>a+r.time,0);
+  openModal(`<h2 class="show">PARABÉNS! VOCÊ CONCLUIU A INVESTIGAÇÃO GENÉTICA!</h2>
+   <p>${LEVELS[2].done}</p><p class="big">${S.score} <span style="font-size:.4em">de 300 pontos</span></p>
+   ${perfTable()}<p>Total de tentativas: <b>${S.totalAttempts}</b>. Tempo total de análise: <b>${fmt(tt)}</b>.</p>
+   <div class="actions"><button class="btn" id="btnAgain">Jogar de novo</button><button class="btn sec" id="btnStay">Rever o último gel</button></div>`,true);
+  confetti();
+  $("btnAgain").onclick=()=>{closeModal();restart();};$("btnStay").onclick=()=>closeModal();
+}
+
+/* ---------- modal ---------- */
+function openModal(html,narrow){const c=$("modalCard");c.className="card"+(narrow?" narrow":"");c.innerHTML=html;$("modal").classList.add("show");$("modal").scrollTop=0;const f=c.querySelector("button");if(f)f.focus();}
+function closeModal(){$("modal").classList.remove("show");}
+$("btnPerf").addEventListener("click",()=>{openModal(`<h2 class="show">Desempenho</h2><p>Níveis concluídos: <b>${S.res.filter(Boolean).length} de 3</b>. Pontuação acumulada: <b>${S.score}</b>. Tentativas no total: <b>${S.totalAttempts}</b>.</p>${perfTable()}
+  <p style="font-size:14px">Pontuação por nível: 100 pontos de primeira, 80 após uma dica, 60 após duas e 40 após três ou mais.</p><div class="actions"><button class="btn" id="bx">Voltar ao jogo</button></div>`,true);$("bx").onclick=closeModal;});
+$("btnRestart").addEventListener("click",()=>{openModal(`<h2 class="show">Reiniciar?</h2><p>Toda a pontuação e o progresso dos três níveis serão apagados.</p><div class="actions"><button class="btn red" id="by">Reiniciar o jogo</button><button class="btn sec" id="bn">Cancelar</button></div>`,true);
+  $("by").onclick=()=>{closeModal();restart();};$("bn").onclick=closeModal;});
+
+/* ---------- ciclo ---------- */
+function startLevel(i){
+  clearInterval(S&&S.cdTimer);
+  Object.assign(S,{lv:i,errors:0,attempts:0,locked:false,solved:false,sel:null,view:0,guide:null,notes:{},hinted:{},flagGel:null,start:Date.now(),elapsed:0,labels:i===0});
+  $("chkLabels").checked=S.labels;
+  $("stage").classList.remove("lit");$("booth").classList.remove("right","wrong");$("verdict").classList.remove("show");
+  $("room").classList.remove("locked");$("hint").classList.remove("show");
+  const b=$("btnSend");b.onclick=null;
+  renderBench();select(null);renderGels();renderNotebook();updateHUD();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function intro(){
+  openModal(`<h2 class="show">TESTE DE DNA: ELE É O PAI?</h2>
+  <p>Uma investigação de paternidade chegou ao nosso laboratório! Uma criança precisa descobrir quem é seu verdadeiro pai biológico. Foram coletadas amostras de DNA da mãe, da criança e de três possíveis pais. Agora, você é o responsável pela análise genética. Examine os resultados, interprete os perfis de STR e descubra quem é o verdadeiro pai!</p>
+  <h3>Como jogar</h3>
+  <ol class="steps"><li>Analise os quatro géis. Cada um mostra vários loci STR com cinco canaletas: mãe, filho(a) e os três suspeitos.</li>
+  <li>Em cada locus, descubra qual alelo da criança veio da mãe. O outro precisa estar no pai.</li>
+  <li>Arraste o suspeito escolhido até a cabine “ELE É O PAI!”, ou toque nele e depois na cabine.</li>
+  <li>Errou? A escolha fica bloqueada por alguns segundos e você recebe uma dica.</li></ol>
+  <div class="levelpick">${LEVELS.map((L,i)=>`<div><b>Nível ${i+1}</b>${L.diff}, ${GENO[String(i+1)].gels.flat().length} loci</div>`).join("")}</div>
+  <div class="actions"><button class="btn" id="btnStart">Começar a investigação</button></div>`,true);
+  $("btnStart").onclick=()=>{closeModal();startLevel(0);};
+}
+function restart(){S=fresh();startLevel(0);intro();}
+S=fresh();startLevel(0);intro();
+</script>
+</body>
+</html>
